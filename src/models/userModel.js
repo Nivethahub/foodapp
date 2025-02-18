@@ -28,6 +28,11 @@ const Userschema = new mongoose.Schema({
     Profile: {
         type: String,
         default: "https://cdn.iconscout.com/icon/free/png-256/free-user-icon-download-in-svg-png-gif-file-formats--profile-avatar-account-person-app-interface-pack-icons-1401302.png"
+    },
+    response: {
+        type: String,
+        required: "response is required"
     }
+
 }, { timestamps: true })
 export default mongoose.model("User", Userschema, "User")
