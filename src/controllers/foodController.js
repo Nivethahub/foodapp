@@ -1,13 +1,14 @@
 import foodModel from "../models/foodModel.js";
 import orderModel from "../models/orderModel.js";
+import restaurantModel from "../models/restaurantModel.js";
 
 // CREATE FOOD
 export const createFoodController = async (req, res) => {
     try {
         const {
-            title,
+            foodName,
             description,
-            price,
+            foodPrice,
             imageUrl,
             foodTags,
             catgeory,
@@ -15,17 +16,22 @@ export const createFoodController = async (req, res) => {
             isAvailabe,
             restaurantID,
             rating,
+            processTime
         } = req.body;
 
-        if (!title || !description || !price || !restaurantID) {
+        if (!foodName || !description || !foodPrice || !restaurantID) {
             return res.status(500).json({
                 message: "Please Provide all fields",
             });
         }
+        const checkrestaDetails = await restaurantModel.findOne({ _id: restaurantID, code: code })
+        if (!checkrestaDetails) {
+            return res.status(404).json({ message: "Restaturant data not found" })
+        }
         const newFood = new foodModel({
-            title,
+            foodName,
             description,
-            price,
+            foodPrice,
             imageUrl,
             foodTags,
             catgeory,
@@ -33,6 +39,7 @@ export const createFoodController = async (req, res) => {
             isAvailabe,
             restaurantID,
             rating,
+            processTime
         });
 
         await newFood.save();
@@ -133,9 +140,9 @@ export const updateFoodController = async (req, res) => {
             });
         }
         const {
-            title,
+            foodName,
             description,
-            price,
+            foodPrice,
             imageUrl,
             foodTags,
             catgeory,
@@ -147,9 +154,9 @@ export const updateFoodController = async (req, res) => {
         const updatedFood = await foodModel.findByIdAndUpdate(
             foodID,
             {
-                title,
+                foodName,
                 description,
-                price,
+                foodPrice,
                 imageUrl,
                 foodTags,
                 catgeory,
@@ -199,31 +206,164 @@ export const deleteFoodController = async (req, res) => {
 // PLACE ORDER
 export const placeOrderController = async (req, res) => {
     try {
-        const { cart } = req.body;
-        if (!cart) {
-            return res.status(500).json({
-                message: "please food cart or payemnt method",
+        const { cart, userID } = req.body;
+
+        if (!cart || !Array.isArray(cart) || cart.length === 0) {
+            return res.status(400).json({
+                message: "Please provide a valid food cart.",
             });
         }
-        let total = 0;
-        //cal
-        cart.map((i) => {
-            total += i.price;
+
+        if (!userID) {
+            return res.status(400).json({
+                message: "Please provide a valid user ID.",
+            });
+        }
+        // const checkorder = await orderModel.find({buyer:userID})
+        // if(checkorder){
+
+        // }
+        //         let total = 0;
+        //         let foodsArray = [];
+
+        //         // Calculate total price and construct foods array
+        //         for (const item of cart) {
+        //             const restaurantData = await restaurantModel.findById(item.RestaurantID);
+        //             if (!restaurantData) {
+        //                 return res.status(404).json({ message: `Restaurant with ID ${item.RestaurantID} not found.` });
+        //             }
+
+        //             const foodData = await foodModel.findOne({
+        //                 _id: item.foodID,
+        //                 isAvailabe: true,
+        //                 restaurantID: item.RestaurantID,
+        //             });
+
+        //             if (!foodData) {
+        //                 return res.status(404).json({ message: `Food item with ID ${item.foodID} not found.` });
+        //             }
+
+        //             const price = Number(foodData.foodPrice);
+        //             if (isNaN(price) || price <= 0) {
+        //                 return res.status(400).json({ message: `Invalid price for food item with ID ${item.foodID}.` });
+        //             }
+
+        //             const quantity = Number(item.quantity);
+        //             if (isNaN(quantity) || quantity <= 0) {
+        //                 return res.status(400).json({ message: `Invalid quantity for food item with ID ${item.foodID}.` });
+        //             }
+
+        //             total += price * quantity;
+        //             console.log('total: ', total);
+
+        //             let orderBoolean;
+        //             if (restaurantData.isorderTaken === true && foodData.OrderTaken === true) {
+        //                 orderBoolean = true;
+        //             } else {
+        //                 orderBoolean = false;
+        //             }
+
+        //             // Construct food item entry
+        //             foodsArray.push({
+        //                 foodID: item.foodID,
+        //                 RestaurantID: item.RestaurantID,
+        //                 TakenByrestaurant: orderBoolean,
+        //             });
+        //         }
+
+        //         // Create a new order
+        //         const newOrder = new orderModel({
+        //             foods: foodsArray,
+        //             payment: total,
+        //             buyer: userID,
+        //         });
+
+        //         // Save the order to the database
+        //         await newOrder.save();
+
+        //         // Return success response
+        //         return res.status(201).json({
+        //             message: "Order placed successfully",
+        //             newOrder,
+        //         });
+
+        const restaurantOrders = new Map();
+
+        for (const item of cart) {
+            const restaurantData = await restaurantModel.findById(item.RestaurantID);
+            if (!restaurantData) {
+                return res.status(404).json({ message: `Restaurant with ID ${item.RestaurantID} not found.` });
+            }
+
+            const foodData = await foodModel.findOne({
+                _id: item.foodID,
+                isAvailabe: true,
+                restaurantID: item.RestaurantID,
+            });
+
+            if (!foodData) {
+                return res.status(404).json({ message: `Food item with ID ${item.foodID} not found.` });
+            }
+
+            const price = Number(foodData.foodPrice);
+            if (isNaN(price) || price <= 0) {
+                return res.status(400).json({ message: `Invalid price for food item with ID ${item.foodID}.` });
+            }
+
+            const quantity = Number(item.quantity);
+            if (isNaN(quantity) || quantity <= 0) {
+                return res.status(400).json({ message: `Invalid quantity for food item with ID ${item.foodID}.` });
+            }
+
+            let orderBoolean = restaurantData.isorderTaken === true && foodData.OrderTaken === true;
+
+            // Add to respective restaurant group
+            if (!restaurantOrders.has(item.RestaurantID)) {
+                restaurantOrders.set(item.RestaurantID, {
+                    foods: [],
+                    total: 0,
+                });
+            }
+
+            const orderData = restaurantOrders.get(item.RestaurantID);
+            orderData.foods.push({
+                foodID: item.foodID,
+                quantity: item.quantity,
+                RestaurantID: item.RestaurantID,
+                TakenByrestaurant: orderBoolean,
+            });
+            orderData.total += price * quantity;
+        }
+
+        // Create separate orders for each restaurant
+        const createdOrders = [];
+        for (const [restaurantID, { foods, total }] of restaurantOrders.entries()) {
+            const newOrder = new orderModel({
+                foods,
+                payment: total,
+                buyer: userID,
+                DeliverTime: "10 mins",
+                OrderedTime: Date.now(),
+                isDelivered: false,
+                status: "Preparing",
+            });
+
+            await newOrder.save();
+            createdOrders.push(newOrder);
+        }
+
+        return res.status(201).json({
+            message: "Orders placed successfully",
+            orders: createdOrders,
         });
 
-        const newOrder = new orderModel({
-            foods: cart,
-            payment: total,
-            buyer: req.body.id,
-        });
-        await newOrder.save();
-        return res.status(201).json({
-            message: "Order Placed successfully",
-            newOrder,
-        });
     } catch (error) {
+        console.error('Error placing order:', error); // Log the full error for debugging
+
+        // Return error response
         return res.status(500).json({
-            error
+            message: "An error occurred while placing the order.",
+            error: error.message, // Send only the error message for security reasons
         });
     }
 };
@@ -252,4 +392,85 @@ export const orderStatusController = async (req, res) => {
         });
     }
 };
+let currentTime
+async function checktime(orderID) {
+    try {
 
+        currentTime = Date.now()
+        const orderData = await orderModel.findOne({ _id: orderID })
+        if (!orderData) {
+            console.error(`Order with ID ${orderID} not found`);
+            return;
+        }
+        const deliver_time = orderData.DeliverTime
+        const data = orderData.foods
+        for (const i of data) {
+            const fooddata = await foodModel.findById(i.foodID);
+
+            const restaurantdata = await restaurantModel.findById(i.RestaurantID)
+            const restatime = parseInt(restaurantdata.OrderacceptTiming);
+            const foodprocesstime = parseInt(fooddata.processTime);
+            const delivertime = parseInt(deliver_time)
+            const restaAdditional = restatime * 60 * 1000;
+            console.log('restaAdditional: ', restaAdditional);
+            const foodAdditional = foodprocesstime * 60 * 1000;
+            console.log('foodAdditional: ', foodAdditional);
+            const deliverAdditional = delivertime * 60 * 1000;
+            console.log('deliverAdditional: ', deliverAdditional);
+            const foodReadytime = restaAdditional + (i.quantity * foodAdditional)
+            console.log('foodReadytime: ', foodReadytime);
+            if (currentTime == foodReadytime) {
+                orderData.isReady = true
+                await orderData.save()
+            }
+            // const checkReadystatus = 
+            const finaltime = foodReadytime + deliverAdditional
+            console.log('finaltime: ', finaltime);
+            // Corrected time calculation
+            orderData.estimatedDeliveryTime = orderData.OrderedTime + finaltime;
+            // Updating order status based on estimated delivery time
+            if (orderData.isReady == true && currentTime === orderData.estimatedDeliveryTime) {
+                // orderData.isReady = true
+                orderData.isDelivered = true
+                orderData.status = "Delivered";
+                await orderData.save()
+            } else if (currentTime > orderData.estimatedDeliveryTime) {
+                orderData.isDelivered = false
+                orderData.status = "Delay";
+                await orderData.save()
+            }
+
+            // Save updated order status
+            await orderData.save();
+        }
+    } catch (error) {
+
+        // Return error response
+        return res.status(500).json({
+            error: error.message,
+        });
+    }
+    setTimeout(() => checktime(orderID), 1000);
+}
+
+export const checkStatusofOrder = async (req, res) => {
+    try {
+        const { orderID } = req.body
+        console.log('req.body: ', req.body);
+        const orderData = await orderModel.findOne({ _id: orderID })
+        console.log('orderData: ', orderData);
+        if (!orderData) {
+            return res.status(404).json({
+                message: "Order not found"
+            })
+        } else {
+            currentTime = Date.now()
+            console.log('currentTime: ', currentTime);
+            checktime(orderID)
+        }
+    } catch (error) {
+        return res.status(500).json({
+            error
+        });
+    }
+}

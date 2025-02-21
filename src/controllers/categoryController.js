@@ -1,4 +1,4 @@
-import categoryModel from "../models/categoryModel";
+import categoryModel from "../models/categoryModel.js";
 
 // CREATE CAT
 export const createCatController = async (req, res) => {

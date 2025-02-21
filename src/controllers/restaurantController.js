@@ -1,9 +1,9 @@
-import restaurantModel from "../models/restaurantModel";
-// CREATE RESTURANT
+import restaurantModel from "../models/restaurantModel.js";
+// CREATE Restaurant
 export const createRestaurantController = async (req, res) => {
     try {
         const {
-            title,
+            restaurantName,
             imageUrl,
             foods,
             time,
@@ -17,13 +17,18 @@ export const createRestaurantController = async (req, res) => {
             coords,
         } = req.body;
         // validation
-        if (!title || !coords) {
+        if (!restaurantName || !coords) {
             return res.status(500).json({
                 message: "please provide title and address"
             });
         }
+
+        const existingResta = await restaurantModel.findOne({ restaurantName: restaurantName, code: code })
+        if (existingResta) {
+            return res.status(401).json({ message: "Restaurant already existing in the same code" })
+        }
         const newRestaurant = new restaurantModel({
-            title,
+            restaurantName,
             imageUrl,
             foods,
             time,
@@ -49,7 +54,7 @@ export const createRestaurantController = async (req, res) => {
     }
 };
 
-// GET ALL RESTURNAT
+// GET ALL Restaurant
 export const getAllRestaurantController = async (req, res) => {
     try {
         const restaurants = await restaurantModel.find({});
@@ -70,7 +75,7 @@ export const getAllRestaurantController = async (req, res) => {
     }
 };
 
-// GET RESTURNAT BY ID
+// GET Restaurant BY ID
 export const getRestaurantByIdController = async (req, res) => {
     try {
         const restaurantId = req.params.restaurantID;
@@ -95,7 +100,7 @@ export const getRestaurantByIdController = async (req, res) => {
     }
 };
 
-//DELETE RESTRURNAT
+//DELETE Restaurant
 export const deleteRestaurantController = async (req, res) => {
     try {
         const restaurantId = req.params.restaurantID;

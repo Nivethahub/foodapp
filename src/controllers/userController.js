@@ -49,6 +49,15 @@ export const ResetPassword = async (req, res) => {
         return res.status(500).json(error)
     }
 }
-export const DeleteProfilecontroller = (req, res) => {
-
+export const DeleteProfilecontroller = async (req, res) => {
+    try {
+        await userModel.findByIdAndDelete(req.params.userID);
+        return res.status(200).json({
+            message: "Your account has been deleted",
+        });
+    } catch (error) {
+        return res.status(500).json({
+            error
+        });
+    }
 }

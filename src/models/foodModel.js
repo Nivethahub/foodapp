@@ -1,17 +1,17 @@
-import {  mongoose } from "mongoose";
+import { mongoose } from "mongoose";
 
-//schema
+
 const foodSchema = new mongoose.Schema(
   {
-    title: {
+    foodName: {
       type: String,
-      required:"Food Title is require",
+      required: "Food Title is require",
     },
     description: {
       type: String,
-      required:  "food description is required",
+      required: "food description is required",
     },
-    price: {
+    foodPrice: {
       type: Number,
       required: "food price is required",
     },
@@ -33,6 +33,10 @@ const foodSchema = new mongoose.Schema(
       type: Boolean,
       default: true,
     },
+    OrderTaken: {
+      type: Boolean,
+      default: true,
+    },
     restaurantID: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Restaurant",
@@ -46,9 +50,13 @@ const foodSchema = new mongoose.Schema(
     ratingCount: {
       type: String,
     },
+    processTime: {
+      type: Number
+    },
+    
   },
   { timestamps: true }
 );
 
-//export
-export default mongoose.model("Foods", foodSchema,"Foods");
+
+export default mongoose.model("Foods", foodSchema, "Foods");

@@ -1,9 +1,8 @@
 import { mongoose } from "mongoose";
 
-//schema
 const restaurantSchema = new mongoose.Schema(
     {
-        title: {
+        restaurantName: {
             type: String,
             required: "Restaurant title is required",
         },
@@ -11,8 +10,13 @@ const restaurantSchema = new mongoose.Schema(
             type: String,
         },
         foods: { type: Array },
-        time: {
+        OrderacceptTiming: {
             type: String,
+            default:"10 mins"
+        },
+        isorderTaken: {
+            type: Boolean,
+            default: true,
         },
         pickup: {
             type: Boolean,
@@ -52,5 +56,5 @@ const restaurantSchema = new mongoose.Schema(
     { timestamps: true }
 );
 
-//export
+
 export default mongoose.model("Restaurant", restaurantSchema, "Restaurant");
